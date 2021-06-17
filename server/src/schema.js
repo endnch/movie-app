@@ -1,13 +1,21 @@
 import { schemaComposer } from 'graphql-compose'
 import { composeMongoose } from 'graphql-compose-mongoose'
 import jwt from 'jsonwebtoken'
+import sgMail from '@sendgrid/mail'
 
-import { ROLES, JWT_SECRET } from './constants'
+import {
+  ROLES,
+  JWT_SECRET,
+  SENDGRID_API_KEY,
+  SENDGRID_FROM_EMAIL,
+} from 'constants'
 
 import User from 'models/user'
 import Category from 'models/category'
 import Movie from 'models/movie'
 import Actor from 'models/actor'
+
+sgMail.setApiKey(SENDGRID_API_KEY)
 
 const UserTC = composeMongoose(User, {})
 const MovieTC = composeMongoose(Movie, {})
@@ -80,22 +88,6 @@ ActorTC.addRelation('movies', {
 
 // MIDDLEWARE
 
-function adminOrSelf(next, source, args, context, info) {
-  if (!context.user) {
-    throw new Error('Unauthorized')
-  }
-
-  if (context.user.role === ROLES.ADMIN) {
-    return next(source, args, context, info)
-  }
-
-  if (args._id !== context.user.id) {
-    throw new Error('Unauthorized')
-  }
-
-  return next(source, args, context, info)
-}
-
 function isAuthenticated(next, source, args, context, info) {
   if (!context.user) {
     throw new Error('Unauthorized')
@@ -152,10 +144,28 @@ UserTC.addResolver({
   },
 })
 
+UserTC.addResolver({
+  name: 'removeFromFavorites',
+  type: UserTC,
+  args: { movieId: 'MongoID!' },
+  description: 'Remove a movie from favorites',
+  resolve: async ({ args, context }) => {
+    const user = await User.updateOne(
+      { _id: context.user.id },
+      { $pull: { favoriteMoviesIds: args.movieId } }
+    )
+    if (!user) return null
+    return User.findOne({ _id: context.user.id })
+  },
+})
+
 schemaComposer.Mutation.addFields({
   userAddToFavorites: UserTC.getResolver('addToFavorites').withMiddlewares([
     isAuthenticated,
   ]),
+  userRemoveFromFavorites: UserTC.getResolver(
+    'removeFromFavorites'
+  ).withMiddlewares([isAuthenticated]),
 })
 
 // CATEGORY
@@ -166,7 +176,9 @@ schemaComposer.Query.addFields({
 })
 
 schemaComposer.Mutation.addFields({
-  categoryCreateOne: CategoryTC.mongooseResolvers.createOne(),
+  categoryCreateOne: CategoryTC.mongooseResolvers
+    .createOne()
+    .withMiddlewares([isAuthenticated, haveRole(ROLES.ADMIN)]),
 })
 
 // MOVIE
@@ -177,7 +189,9 @@ schemaComposer.Query.addFields({
 })
 
 schemaComposer.Mutation.addFields({
-  movieCreateOne: MovieTC.mongooseResolvers.createOne(),
+  movieCreateOne: MovieTC.mongooseResolvers
+    .createOne()
+    .withMiddlewares([isAuthenticated, haveRole(ROLES.ADMIN)]),
 })
 
 // ACTOR
@@ -187,7 +201,9 @@ schemaComposer.Query.addFields({
 })
 
 schemaComposer.Mutation.addFields({
-  actorCreateOne: ActorTC.mongooseResolvers.createOne(),
+  actorCreateOne: ActorTC.mongooseResolvers
+    .createOne()
+    .withMiddlewares([isAuthenticated, haveRole(ROLES.ADMIN)]),
 })
 
 // SIGN UP
@@ -212,8 +228,16 @@ schemaComposer.Mutation.addFields({
       const user = await User.create({
         email: args.email,
         password: args.password,
-        role: 'User',
+        role: ROLES.USER,
       })
+
+      await sgMail.send({
+        to: user.email,
+        from: SENDGRID_FROM_EMAIL,
+        subject: 'Welcome',
+        text: 'Welcome to movie-app',
+      })
+
       const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET)
       return {
         user,
