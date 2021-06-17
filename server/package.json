@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon --exec babel-node src/index.js",
+    "dev": "nodemon --exec babel-node -r dotenv/config src/index.js",
+    "debug": "nodemon --exec babel-node -r dotenv/config --inspect src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -14,12 +15,20 @@
     "@babel/core": "^7.14.5",
     "@babel/node": "^7.14.5",
     "@babel/preset-env": "^7.14.5",
+    "babel-plugin-module-resolver": "^4.1.0",
     "eslint": "^7.28.0",
     "eslint-config-prettier": "^8.3.0",
     "nodemon": "^2.0.7",
     "prettier": "2.3.1"
   },
   "dependencies": {
-    "express": "^4.17.1"
+    "apollo-server": "^2.25.1",
+    "dotenv": "^10.0.0",
+    "express": "^4.17.1",
+    "graphql": "^15.5.0",
+    "graphql-compose": "^9.0.1",
+    "graphql-compose-mongoose": "^9.4.1",
+    "jsonwebtoken": "^8.5.1",
+    "mongoose": "^5.12.14"
   }
 }
