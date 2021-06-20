@@ -180,6 +180,19 @@ UserTC.addResolver({
   },
 })
 
+UserTC.addResolver({
+  name: 'getInfo',
+  type: UserTC,
+  description: 'Get user info',
+  resolve: async ({ context }) => {
+    return User.findOne({ _id: context.user.id })
+  },
+})
+
+schemaComposer.Query.addFields({
+  userGetInfo: UserTC.getResolver('getInfo').withMiddlewares([isAuthenticated]),
+})
+
 schemaComposer.Mutation.addFields({
   userAddToFavorites: UserTC.getResolver('addToFavorites').withMiddlewares([
     isAuthenticated,
