@@ -233,6 +233,7 @@ schemaComposer.Mutation.addFields({
 
 schemaComposer.Query.addFields({
   actorById: ActorTC.mongooseResolvers.findById(),
+  actorMany: ActorTC.mongooseResolvers.findMany(),
 })
 
 schemaComposer.Mutation.addFields({
