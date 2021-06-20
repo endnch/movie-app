@@ -159,6 +159,27 @@ UserTC.addResolver({
   },
 })
 
+UserTC.addResolver({
+  name: 'update',
+  type: UserTC,
+  args: { email: 'String', password: 'String' },
+  description: 'Update a user',
+  resolve: async ({ args, context }) => {
+    const { email, password } = await User.findOne({ _id: context.user.id })
+
+    const user = await User.updateOne(
+      { _id: context.user.id },
+      { email: args.email || email, password: args.password || password }
+    )
+
+    if (!user) {
+      return null
+    }
+
+    return User.findOne({ _id: context.user.id })
+  },
+})
+
 schemaComposer.Mutation.addFields({
   userAddToFavorites: UserTC.getResolver('addToFavorites').withMiddlewares([
     isAuthenticated,
@@ -166,6 +187,7 @@ schemaComposer.Mutation.addFields({
   userRemoveFromFavorites: UserTC.getResolver(
     'removeFromFavorites'
   ).withMiddlewares([isAuthenticated]),
+  userUpdate: UserTC.getResolver('update').withMiddlewares([isAuthenticated]),
 })
 
 // CATEGORY
