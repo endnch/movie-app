@@ -217,12 +217,6 @@ import { ROLES } from 'constants'
   })
 
   await Movie.create({
-    title: 'The Dark Knight',
-    categoryId: actionCategory,
-    actorsIds: [christianBale._id, morganFreeman._id],
-  })
-
-  await Movie.create({
     title: 'The Dark Knight Rises',
     categoryId: actionCategory,
     actorsIds: [christianBale._id, morganFreeman._id, tomHardy._id],
