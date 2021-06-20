@@ -8,6 +8,7 @@ import {
   JWT_SECRET,
   SENDGRID_API_KEY,
   SENDGRID_FROM_EMAIL,
+  NODE_ENV,
 } from 'constants'
 
 import User from 'models/user'
@@ -267,12 +268,14 @@ schemaComposer.Mutation.addFields({
         role: ROLES.USER,
       })
 
-      await sgMail.send({
-        to: user.email,
-        from: SENDGRID_FROM_EMAIL,
-        subject: 'Welcome',
-        text: 'Welcome to movie-app',
-      })
+      if (NODE_ENV === 'production') {
+        await sgMail.send({
+          to: user.email,
+          from: SENDGRID_FROM_EMAIL,
+          subject: 'Welcome',
+          text: 'Welcome to movie-app',
+        })
+      }
 
       const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET)
       return {
